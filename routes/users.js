@@ -2,6 +2,11 @@ const express = require('express');
 const router = express.Router();
 const usersController = require('../controllers/users_controller');
 
+router.get('/patients/:id/all_reports',usersController.check_user,usersController.allReports)
+
+router.post('/patients/:id/create_report',usersController.check_user,usersController.createReport)
+
+router.get('/reports/:status',usersController.check_user,usersController.statusReport)
 
 router.post('/doctors/register', usersController.register);
 

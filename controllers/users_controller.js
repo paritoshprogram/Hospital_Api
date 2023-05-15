@@ -1,8 +1,10 @@
 const User = require('../models/user');
+const Report = require('../models/report')
 const db = require('../mongoose.js')
 
 var bcrypt = require('bcryptjs');
 var jwt = require('jsonwebtoken');
+
 
 if (typeof localStorage === "undefined" || localStorage === null) {
     var LocalStorage = require('node-localstorage').LocalStorage;
@@ -99,7 +101,93 @@ if (typeof localStorage === "undefined" || localStorage === null) {
 
 
   }
+
+  module.exports.createReport = (req,res)=>{
+
+    const {status} = req.body
+
+    const token = localStorage.getItem('token')
+
+    var email
+
+    jwt.verify(token, secretKey, (error, decodedToken) => {
+      if (error) {
+        console.error('Error verifying session token:', error);
+        // Handle the error appropriately
+      } else {
+        // Access the desired information from the decoded token
+       
+        email = decodedToken.email;
+        // Use the extracted information as needed
+        console.log('Email:', email);
+      }
+    });
+
+    const newReport = new Report({
+        patient_id:req.params.id,
+        created_by:email,
+        status,
+        date:Date.now()
+    })
+
+    return newReport.save()
+
+    .then(() => {
+      res.status(201).json({ message: 'Report created successfully' });
+    })
+    .catch((err) => {
+      res.status(500).json({ message: 'Internal server error' });
+    });
+
+
+
+  }
+
+  module.exports.statusReport = (req,res)=>{
+    const status = req.params.status
+    
+    async function statusReport(){
+
+      try{
+         const results = await Report.find({status:status}).exec()
+    
+        console.log(results)
+        res.status(200).json({message:results})
+
+      }
+
+      catch(err){
+        console.error('Error retrieving reports:', err);
+      }
+    }
+
+    statusReport()
+
+  }
   
+
+  module.exports.allReports = (req,res)=>{
+
+   const  patient_id = req.params.id
+
+
+   async function getReports() {
+
+   try {
+    const reports = await Report.find({ patient_id:patient_id }).sort({ date: 1 }).exec();
+    
+    res.status(200).json({message:reports})
+  } catch (err) {
+    console.error('Error retrieving reports:', err);
+  }
+    // Print the reports
+   
+   }
+
+    getReports()
+
+  }
+
 
   module.exports.login = (req, res, next) => {
     const { email, password } = req.body;
@@ -140,6 +228,8 @@ if (typeof localStorage === "undefined" || localStorage === null) {
 module.exports.check_user = (req,res,next)=>{
 
     const token = localStorage.getItem('token')
+
+  
     jwt.verify(token,secretKey,(err,decoded)=>{
         if(err)
         {
@@ -147,6 +237,7 @@ module.exports.check_user = (req,res,next)=>{
         }
         else{
         req.decoded = decoded;
+        console.log(decoded)
         next();
         }
     })
